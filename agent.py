@@ -119,6 +119,8 @@ class Agent:
                 except:
                     print("exception occured")
 
+            self.target_net.save()
+
 
 agent = Agent()
 agent.train_loop()
