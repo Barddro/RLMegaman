@@ -8,15 +8,8 @@ from torch import nn
 import torch.nn.functional as F
 
 #https://medium.com/@samina.amin/deep-q-learning-dqn-71c109586bae
-"""
-class DQN(nn.Module):
-    def __init__(self, in_states, h1_nodes, out_actions):
-        super().__init__()
 
-        #Define network layers
-        self.fc1 = nn.Linear(in_states, h1_nodes) #fully connected layer 1
-        self.out = nn.Linear(h1_nodes, out_actions) #output layer
-"""
+MODEL_PATH = "trained/model1.pt"
 
 class DQN(nn.Module):
 
@@ -40,5 +33,8 @@ class DQN(nn.Module):
 
         x = F.relu(self.fc1(x))
         return self.fc2(x)
+
+    def save(self):
+        torch.save(self.state_dict(), MODEL_PATH)
 
 

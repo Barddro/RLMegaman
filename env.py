@@ -67,18 +67,18 @@ class Env:
     ]
 
     #Reward Params
-    SCREEN_REWARD = 10
-    ENEMY_KILL_REWARD = 5
-    BOSS_DAMAGE_REWARD = 10
-    HP_PENALTY = 5
-    DEATH_PENALTY = 100
+    SCREEN_REWARD = 30
+    ENEMY_DAMAGE_REWARD = 5
+    BOSS_DAMAGE_REWARD = 20
+    HP_PENALTY = 2
+    DEATH_PENALTY = 65
     MOVEMENT_REWARD = 0.01
-    STUCK_PENALTY = 40
+    STUCK_PENALTY = 50
     TOTAL_MOVEMENT_REWARD = 0.05
-    BOSS_KILL_REWARD = 1000
+    BOSS_KILL_REWARD = 200
 
-    STUCK_THRESHOLD = 1500
-    POS_HISTORY = 1000
+    STUCK_THRESHOLD = 35
+    POS_HISTORY = 1300
 
     def loadState(self, path):
         with open(path, "rb") as f:
@@ -155,14 +155,14 @@ class Env:
         if self.nes[Env.SCREENID] != self.screenid:
             self.position_history.clear() #clear position history on room transition
             if self.nes[Env.SCREENID] < self.screenid:
-                reward += Env.SCREEN_REWARD
-            elif self.nes[Env.SCREENID] > self.screenid:
                 reward -= Env.SCREEN_REWARD
+            elif self.nes[Env.SCREENID] > self.screenid:
+                reward += Env.SCREEN_REWARD
         # movement
         reward += (abs(self.x_pos - self.nes[Env.X_POS]) + abs(self.y_pos - self.nes[Env.Y_POS])) * Env.MOVEMENT_REWARD
 
         # damage taken
-        reward -= (self.hp - self.nes[Env.HP]) * Env.HP_PENALTY
+        reward += (self.nes[Env.HP] - self.hp) * Env.HP_PENALTY
 
         # boss damage
         reward += (self.boss_hp - self.nes[Env.BOSS_HP]) * Env.BOSS_DAMAGE_REWARD
@@ -170,7 +170,7 @@ class Env:
         # enemy kills
         for i in range(0, Env.ENEMIES_END - Env.ENEMIES_START + 1):
             if self.enemytable[i] > self.nes[Env.ENEMIES_START + i]:
-                reward += 3
+                reward += Env.ENEMY_DAMAGE_REWARD
 
         # death
         terminal_reward, terminal = self.isTerminal()
@@ -229,13 +229,7 @@ class Env:
         return displacement
 
     def displacement(self, v1, v2):
-        res = 0
-        for i in range(len(v1)):
-            compn = v1[i] + v2[i]
-            res += compn*compn
-
-        res = math.sqrt(res)
-        return res
+        return math.dist(v1, v2)
 
     def isTerminal(self):
         hp_death = self.nes[Env.HP] == 0
@@ -244,7 +238,18 @@ class Env:
         boss_killed = self.killedBoss()
 
         terminal = hp_death or pit_death or stuck_terminal or boss_killed
-        reward = Env.BOSS_KILL_REWARD if boss_killed else -Env.DEATH_PENALTY
+
+        reward = 0
+
+        if hp_death:
+            reward = -Env.DEATH_PENALTY
+        elif pit_death:
+            reward = -Env.DEATH_PENALTY - 28 * Env.HP_PENALTY
+        elif stuck_terminal:
+            reward = -Env.DEATH_PENALTY - Env.STUCK_PENALTY
+        else:
+            reward = Env.BOSS_KILL_REWARD
+
         if terminal:
             return reward, terminal
         return 0, terminal

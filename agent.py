@@ -88,33 +88,37 @@ class Agent:
         return q_values.argmax(dim=1).item()
 
     def train_loop(self):
-        for episode in range(1000):
+            for episode in range(1000):
+                try:
 
-            obs = self.env.reset()
-            terminal = False
-            total_reward = 0
+                    obs = self.env.reset()
+                    terminal = False
+                    total_reward = 0
 
-            while not terminal:
-                action = self.select_action(obs)
+                    while not terminal:
+                        action = self.select_action(obs)
 
-                obs, reward, next_obs, terminal = self.env.step(action)
+                        obs, reward, next_obs, terminal = self.env.step(action)
 
-                self.memory_replay.append(obs, action, reward, next_obs, terminal)
+                        self.memory_replay.append(obs, action, reward, next_obs, terminal)
 
-                obs = next_obs
-                total_reward += reward
+                        obs = next_obs
+                        total_reward += reward
 
-                # In train_loop, replace self.train() with:
-                self.step_count += 1
-                if self.step_count % 4 == 0:  # only train every 4 steps
-                    self.train()
+                        # In train_loop, replace self.train() with:
+                        self.step_count += 1
+                        if self.step_count % 4 == 0:  # only train every 4 steps
+                            self.train()
 
-            self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
+                    self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
 
-            if episode % 100 == 0:
-                self.target_net.load_state_dict(self.policy_net.state_dict())
+                    if episode % 100 == 0:
+                        self.target_net.load_state_dict(self.policy_net.state_dict())
 
-            print("Episode:", episode, "Reward:", total_reward)
+                    print("Episode:", episode, "Reward:", total_reward)
+                except:
+                    print("exception occured")
+
 
 agent = Agent()
 agent.train_loop()
