@@ -6,8 +6,8 @@ from cynes.windowed import WindowedNES
 import sdl2
 
 FRAME_TIME = 1.0 / 60.0
-ENEMIES_START = 0x0450
-ENEMIES_END = 0x0467
+ENEMIES_START = 0x06C2
+ENEMIES_END = ENEMIES_START + 0x1F
 
 state_num = 1000
 
@@ -61,7 +61,7 @@ def main():
         nes.step()
 
         for i in range(len(enemytable)):
-            print(nes[ENEMIES_START + i])
+            #print(nes[ENEMIES_START + i])
             if(nes[ENEMIES_START + i] < enemytable[i]):
                 print("ENEMY TOOK DAMAGE!")
 

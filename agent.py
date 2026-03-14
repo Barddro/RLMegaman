@@ -44,8 +44,9 @@ class Agent:
         q_value = q_values.gather(1, actions.unsqueeze(1)).squeeze(1)
 
         with torch.no_grad():
+            next_actions = self.policy_net(next_obs).argmax(dim=1, keepdim=True)
             next_q_values = self.target_net(next_obs)
-            max_next_q = next_q_values.max(1)[0]
+            max_next_q = next_q_values.gather(1, next_actions).squeeze(1)
 
         target = rewards + self.gamma * max_next_q * (1 - terminals)
 
@@ -70,7 +71,7 @@ class Agent:
         return q_values.argmax(dim=1).item()
 
     def train_loop(self):
-        for episode in range(2400):
+        for episode in range(4000):
             try:
                 obs = self.env.reset()
                 terminal = False
@@ -89,17 +90,55 @@ class Agent:
                     if self.step_count % 4 == 0:
                         self.train()
 
-                    if self.step_count % 10000 == 0:  # ← step-based, not episode-based
+                    if self.step_count % 5000 == 0:  # ← step-based, not episode-based
                         self.target_net.load_state_dict(self.policy_net.state_dict())
+
+                #failsafe
+                if total_reward >= 1000:
+                    total_reward = 0
+                    self.policy_net.load()
+                    self.target_net.load()
+                    continue
+
+                if episode % 100 == 0:
+                    print("Saving Model")
+                    self.target_net.save()
 
                 self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
                 print("Episode:", episode, "Reward:", total_reward)
+
 
             except Exception as e:  # ← actually see your errors
                 import traceback
                 traceback.print_exc()
 
         self.target_net.save()
+
+    def play(self):
+        self.epsilon = 0
+
+        self.policy_net.load()
+        self.policy_net.eval()
+
+        obs = self.env.getFrameBuffer()
+
+        self.env.loadRandomStartingState()
+
+        while not self.env.nes.should_close:
+
+            obs_tensor = torch.FloatTensor(obs).unsqueeze(0).to(device)
+
+            with torch.no_grad():
+                q_values = self.policy_net(obs_tensor)
+
+            action = q_values.argmax(dim=1).item()
+
+            obs, _, next_obs, terminal = self.env.step(action)
+            obs = next_obs
+
+
+
+
 
 
 agent = Agent()

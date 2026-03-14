@@ -9,7 +9,9 @@ import torch.nn.functional as F
 
 #https://medium.com/@samina.amin/deep-q-learning-dqn-71c109586bae
 
-MODEL_PATH = "trained/model1.pt"
+MODEL_PATH = "trained/model.pt"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class DQN(nn.Module):
 
@@ -37,4 +39,7 @@ class DQN(nn.Module):
     def save(self):
         torch.save(self.state_dict(), MODEL_PATH)
 
+    def load(self):
+        model_state = torch.load(MODEL_PATH, map_location=device)
+        self.load_state_dict(model_state)
 

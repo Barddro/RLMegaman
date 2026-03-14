@@ -12,6 +12,7 @@ from cynes.windowed import WindowedNES
 #from collectstatesauto import loadState
 import cv2
 from pathlib import Path
+import imageio
 
 #https://datacrystal.tcrf.net/w/index.php?title=Mega_Man_2/RAM_map
 
@@ -48,7 +49,7 @@ class Env:
     SCREENID = 0x0440
     HP = 0x06C0
     ENEMIES_START = 0x06C2
-    ENEMIES_END = 0x06CF
+    ENEMIES_END = ENEMIES_START + 0x1F
     BOSS_HP = 0x06C1
     X_POS = 0x0460
     Y_POS = 0x04A0
@@ -67,17 +68,17 @@ class Env:
     ]
 
     # Reward Params
-    SCREEN_REWARD = 3.0
-    ENEMY_DAMAGE_REWARD = 0.3
-    BOSS_DAMAGE_REWARD = 0.2
-    HP_PENALTY = 0.1
-    DEATH_PENALTY = 8.0
-    MOVEMENT_REWARD = 0.001
-    STUCK_PENALTY = 5.0
-    TOTAL_MOVEMENT_REWARD = 0.005
-    BOSS_KILL_REWARD = 8.0
+    SCREEN_REWARD = 0.6  # was 3.0  → 3/8
+    ENEMY_DAMAGE_REWARD = 0.02  # was 0.3  → 0.3/8
+    BOSS_DAMAGE_REWARD = 0.02  # was 0.2  → 0.2/8
+    HP_PENALTY = 0.015  # was 0.1  → 0.1/8
+    DEATH_PENALTY = 1.0  # was 8.0  ← anchor
+    STUCK_PENALTY = 0.6  # was 5.0  → 5/8
+    BOSS_KILL_REWARD = 1.0  # was 8.0  ← anchor
+    MOVEMENT_REWARD = 0.001  # was 0.001 — nudged up, otherwise ~0 after scaling
+    TOTAL_MOVEMENT_REWARD = 0  # was 0.005 — same
 
-    STUCK_THRESHOLD = 35
+    STUCK_THRESHOLD = 15
     POS_HISTORY = 1300
 
     def loadState(self, path):
@@ -145,6 +146,7 @@ class Env:
         obs = self.getFrameBuffer()
         self.writeToFrameBuffer(frame)
         next_obs = self.getFrameBuffer()
+        #self.export_framebuffer_gif()
 
         return obs, total_reward, next_obs, terminal
 
@@ -178,7 +180,7 @@ class Env:
             reward += self.getTotalMovement() * Env.TOTAL_MOVEMENT_REWARD
             reward += terminal_reward
 
-        return reward
+        return np.clip(reward, -2.0, 2.0)
 
     #helpers
     def getSingleFrame(self):
@@ -256,6 +258,44 @@ class Env:
 
     def killedBoss(self):
         return self.boss_hp > 0 and self.nes[Env.BOSS_HP] <= 0
+
+
+    def export_framebuffer_gif(self, path="debug.gif", scale=1, fps=6):
+        """
+        Saves a (N, H, W) frame buffer as a GIF.
+
+        frame_buffer: numpy array like (4,84,84) or list of frames
+        scale: enlarges frames so they are easier to see
+        fps: playback speed
+        """
+
+        frames = []
+
+        for frame in self.frameBuffer:
+            img = frame.copy()
+
+            # if normalized (0–1) convert back to uint8
+            if img.max() <= 1.0:
+                img = (img * 255).astype(np.uint8)
+
+            # enlarge so it’s visible
+            if scale != 1:
+                img = cv2.resize(
+                    img,
+                    (img.shape[1] * scale, img.shape[0] * scale),
+                    interpolation=cv2.INTER_NEAREST
+                )
+
+            frames.append(img)
+
+        imageio.mimsave(path, frames, fps=fps)
+
+    def loadRandomStartingState(self, path_string="./"):
+        path = Path(f"{path_string}/states")
+        stages = [item for item in path.iterdir()]
+        path = random.choice(stages)
+
+        self.loadState(f"{str(path)}/0.state")
     """
     At time t:
         - You have frames: 1,2,3,4
