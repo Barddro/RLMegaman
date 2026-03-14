@@ -66,16 +66,16 @@ class Env:
         NES_INPUT_RIGHT | NES_INPUT_B
     ]
 
-    #Reward Params
-    SCREEN_REWARD = 30
-    ENEMY_DAMAGE_REWARD = 5
-    BOSS_DAMAGE_REWARD = 20
-    HP_PENALTY = 2
-    DEATH_PENALTY = 65
-    MOVEMENT_REWARD = 0.01
-    STUCK_PENALTY = 50
-    TOTAL_MOVEMENT_REWARD = 0.05
-    BOSS_KILL_REWARD = 200
+    # Reward Params
+    SCREEN_REWARD = 3.0
+    ENEMY_DAMAGE_REWARD = 0.3
+    BOSS_DAMAGE_REWARD = 0.2
+    HP_PENALTY = 0.1
+    DEATH_PENALTY = 8.0
+    MOVEMENT_REWARD = 0.001
+    STUCK_PENALTY = 5.0
+    TOTAL_MOVEMENT_REWARD = 0.005
+    BOSS_KILL_REWARD = 8.0
 
     STUCK_THRESHOLD = 35
     POS_HISTORY = 1300
@@ -195,9 +195,9 @@ class Env:
     def checkStuck(self):
 
         if len(self.position_history) == self.position_history.maxlen and self.boss_hp == 0:
-            print("checking if stuck")
+            #print("checking if stuck")
             if self.getTotalMovement() < Env.STUCK_THRESHOLD:
-                print("STUCK!")
+                print("Megaman Stuck! Terminating episode")
                 return True
 
         return False
@@ -225,7 +225,7 @@ class Env:
 
     def getTotalMovement(self):
         displacement = self.displacement(self.position_history[0], self.position_history[-1])
-        print(f"Net displacement: {displacement}")
+        #print(f"Net displacement: {displacement}")
         return displacement
 
     def displacement(self, v1, v2):

@@ -6,12 +6,15 @@ from cynes.windowed import WindowedNES
 import sdl2
 
 FRAME_TIME = 1.0 / 60.0
+ENEMIES_START = 0x0450
+ENEMIES_END = 0x0467
 
 state_num = 1000
 
 BOSS_HP = 0x06C1
 
 def main():
+    enemytable = []
     parser = argparse.ArgumentParser(description="Collect MegaMan start states.")
     parser.add_argument("--rom", default="rom.nes", help="Path to the NES ROM file.")
     parser.add_argument("--states-dir", default="states/flashman", help="Directory to save state files.")
@@ -47,15 +50,21 @@ def main():
 
 
     nes = WindowedNES(args.rom)
-    load_state("./states/flashman/14.state")
+    load_state("./states/woodman/3.state")
 
     space_prev = False
 
     while not nes.should_close:
-        print(f"Boss HP: {nes[BOSS_HP]}")
+        #print(f"Boss HP: {nes[BOSS_HP]}")
         frame_start = time.perf_counter()
 
         nes.step()
+
+        for i in range(len(enemytable)):
+            print(nes[ENEMIES_START + i])
+            if(nes[ENEMIES_START + i] < enemytable[i]):
+                print("ENEMY TOOK DAMAGE!")
+
 
         keys = sdl2.SDL_GetKeyboardState(None)
         space_now = keys[sdl2.SDL_SCANCODE_SPACE]
@@ -68,6 +77,10 @@ def main():
         sleep_for = FRAME_TIME - elapsed
         if sleep_for > 0:
             time.sleep(sleep_for)
+
+        enemytable = []
+        for i in range(ENEMIES_START, ENEMIES_END + 1):
+            enemytable.append(nes[i])
 
 
 if __name__ == "__main__":
